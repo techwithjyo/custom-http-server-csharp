@@ -15,69 +15,95 @@ while (true)
     var socket = server.AcceptSocket();
     Console.WriteLine("Client connected");
 
-    // Read the request
-    using (var networkStream = new NetworkStream(socket))
-    using (var reader = new StreamReader(networkStream, Encoding.UTF8))
+    // Handle the client connection in a new thread
+    ThreadPool.QueueUserWorkItem(HandleClient, socket);
+}
+
+void HandleClient(object obj)
+{
+    var socket = (Socket)obj;
+
+    try
     {
-        string requestLine = reader.ReadLine();
-        Console.WriteLine($"Received request: {requestLine}");
-
-        if (requestLine != null && requestLine.StartsWith("GET"))
+        // Read the request
+        using (var networkStream = new NetworkStream(socket))
+        using (var reader = new StreamReader(networkStream, Encoding.UTF8))
         {
-            // Extract the path from the request
-            string path = requestLine.Split(' ')[1];
-            Console.WriteLine($"Requested path: {path}");
+            string requestLine = reader.ReadLine();
+            Console.WriteLine($"Received request: {requestLine}");
 
-            // Read headers
-            string userAgent = null;
-            string line;
-            while (!string.IsNullOrEmpty(line = reader.ReadLine()))
+            if (requestLine != null && requestLine.StartsWith("GET"))
             {
-                if (line.StartsWith("User-Agent:"))
+                // Extract the path from the request
+                string path = requestLine.Split(' ')[1];
+                Console.WriteLine($"Requested path: {path}");
+
+                // Read headers
+                string userAgent = null;
+                string line;
+                while (!string.IsNullOrEmpty(line = reader.ReadLine()))
                 {
-                    userAgent = line.Substring("User-Agent:".Length).Trim();
-                    Console.WriteLine($"Extracted User-Agent: {userAgent}");
+                    if (line.StartsWith("User-Agent:"))
+                    {
+                        userAgent = line.Substring("User-Agent:".Length).Trim();
+                        Console.WriteLine($"Extracted User-Agent: {userAgent}");
+                    }
                 }
-            }
 
-            if (path == "/user-agent" && userAgent != null)
-            {
-                string response = $"HTTP/1.1 200 OK\r\n" +
-                                   "Content-Type: text/plain\r\n" +
-                                   $"Content-Length: {userAgent.Length}\r\n\r\n" +
-                                   userAgent;
-                socket.Send(Encoding.UTF8.GetBytes(response)); 
-                Console.WriteLine("Sent response 200 OK with User Agent!");
-            }
-            else if (path.StartsWith("/echo/"))
-            {
-                string echoPath = path.Substring("/echo/".Length);
-                Console.WriteLine($"Extracted echo path: {echoPath}");
+                if (path == "/user-agent" && userAgent != null)
+                {
+                    string response = $"HTTP/1.1 200 OK\r\n" +
+                                       "Content-Type: text/plain\r\n" +
+                                       $"Content-Length: {userAgent.Length}\r\n\r\n" +
+                                       userAgent;
+                    socket.Send(Encoding.UTF8.GetBytes(response));
+                    Console.WriteLine("Sent response 200 OK with User Agent!");
+                }
+                else if (path.StartsWith("/echo/"))
+                {
+                    string echoPath = path.Substring("/echo/".Length);
+                    Console.WriteLine($"Extracted echo path: {echoPath}");
 
-                string response = $"HTTP/1.1 200 OK\r\n" +
-                                   "Content-Type: text/plain\r\n" +
-                                   $"Content-Length: {echoPath.Length}\r\n\r\n" +
-                                   echoPath;
-                socket.Send(Encoding.UTF8.GetBytes(response));
-                Console.WriteLine("Sent response 200 OK with echo path!");
-            }
-            else if (path == "/")
-            {
-                // Respond with 200 OK
-                string response = "HTTP/1.1 200 OK\r\n\r\n";
-                socket.Send(Encoding.UTF8.GetBytes(response));
-                Console.WriteLine("Sent response 200 OK!");
-            }
-            else
-            {
-                // Respond with 404 Not Found
-                string response = "HTTP/1.1 404 Not Found\r\n\r\n";
-                socket.Send(Encoding.UTF8.GetBytes(response));
-                Console.WriteLine("Sent response 404 Not Found!");
+                    string response = $"HTTP/1.1 200 OK\r\n" +
+                                       "Content-Type: text/plain\r\n" +
+                                       $"Content-Length: {echoPath.Length}\r\n\r\n" +
+                                       echoPath;
+                    socket.Send(Encoding.UTF8.GetBytes(response));
+                    Console.WriteLine("Sent response 200 OK with echo path!");
+                }
+                else if (path == "/")
+                {
+                    // Respond with 200 OK
+                    string response = "HTTP/1.1 200 OK\r\n\r\n";
+                    socket.Send(Encoding.UTF8.GetBytes(response));
+                    Console.WriteLine("Sent response 200 OK!");
+                }
+                else
+                {
+                    // Respond with 404 Not Found
+                    string response = "HTTP/1.1 404 Not Found\r\n\r\n";
+                    socket.Send(Encoding.UTF8.GetBytes(response));
+                    Console.WriteLine("Sent response 404 Not Found!");
+                }
             }
         }
     }
-    socket.Close();
-    Console.WriteLine("Client disconnected");
+    catch (Exception ex)
+    {
+        Console.WriteLine($"Error handling client: {ex.Message}");
+    }
+    finally
+    {
+        socket.Close();
+        Console.WriteLine("Client disconnected");
+    }
+}
+
+while (true)
+{
+
+
+
+
 }
 

@@ -46,7 +46,7 @@ while (true)
                                    "Content-Type: text/plain\r\n" +
                                    $"Content-Length: {userAgent.Length}\r\n\r\n" +
                                    userAgent;
-                socket.Send(Encoding.UTF8.GetBytes(response));
+                socket.Send(Encoding.UTF8.GetBytes(response)); 
                 Console.WriteLine("Sent response 200 OK with User Agent!");
             }
             else if (path.StartsWith("/echo/"))

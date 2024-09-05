@@ -28,7 +28,28 @@ while (true)
             string path = requestLine.Split(' ')[1];
             Console.WriteLine($"Requested path: {path}");
 
-            if(path.StartsWith("/echo/"))
+            // Read headers
+            string userAgent = null;
+            string line;
+            while (!string.IsNullOrEmpty(line = reader.ReadLine()))
+            {
+                if (line.StartsWith("User-Agent:"))
+                {
+                    userAgent = line.Substring("User-Agent:".Length).Trim();
+                    Console.WriteLine($"Extracted User-Agent: {userAgent}");
+                }
+            }
+
+            if (path == "/user-agent" && userAgent != null)
+            {
+                string response = $"HTTP/1.1 200 OK\r\n" +
+                                   "Content-Type: text/plain\r\n" +
+                                   $"Content-Length: {userAgent.Length}\r\n\r\n" +
+                                   userAgent;
+                socket.Send(Encoding.UTF8.GetBytes(response));
+                Console.WriteLine("Sent response 200 OK with User Agent!");
+            }
+            else if (path.StartsWith("/echo/"))
             {
                 string echoPath = path.Substring("/echo/".Length);
                 Console.WriteLine($"Extracted echo path: {echoPath}");

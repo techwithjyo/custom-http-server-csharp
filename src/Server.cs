@@ -28,7 +28,19 @@ while (true)
             string path = requestLine.Split(' ')[1];
             Console.WriteLine($"Requested path: {path}");
 
-            if (path == "/")
+            if(path.StartsWith("/echo/"))
+            {
+                string echoPath = path.Substring("/echo/".Length);
+                Console.WriteLine($"Extracted echo path: {echoPath}");
+
+                string response = $"HTTP/1.1 200 OK\r\n" +
+                                   "Content-Type: text/plain\r\n" +
+                                   $"Content-Length: {echoPath.Length}\r\n\r\n" +
+                                   echoPath;
+                socket.Send(Encoding.UTF8.GetBytes(response));
+                Console.WriteLine("Sent response 200 OK with echo path!");
+            }
+            else if (path == "/")
             {
                 // Respond with 200 OK
                 string response = "HTTP/1.1 200 OK\r\n\r\n";

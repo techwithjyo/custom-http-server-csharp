@@ -142,12 +142,3 @@ void HandleClient(object obj)
         Console.WriteLine("Client disconnected");
     }
 }
-
-while (true)
-{
-
-
-
-
-}
-

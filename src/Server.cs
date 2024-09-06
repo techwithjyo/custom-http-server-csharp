@@ -59,6 +59,7 @@ void HandleClient(object obj)
                     if (args[i] == "--directory" && i + 1 < args.Length)
                     {
                         directory = args[i + 1];
+                        Console.WriteLine("Directory: " + directory);
                         break;
                     }
                 }
@@ -98,7 +99,7 @@ void HandleClient(object obj)
                     {
                         byte[] fileContent = File.ReadAllBytes(filePath);
 
-                        
+
                         string response = $"HTTP/1.1 200 OK\r\n" +
                                            "Content-Type: application/octet-stream\r\n" +
                                            $"Content-Length: {fileContent.Length}\r\n\r\n";

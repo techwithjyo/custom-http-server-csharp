@@ -50,6 +50,23 @@ void HandleClient(object obj)
                     }
                 }
 
+                string[] args = Environment.GetCommandLineArgs();
+                string directory = null;
+                for (int i = 0; i < args.Length; i++)
+                {
+                    if (args[i] == "--directory" && i + 1 < args.Length)
+                    {
+                        directory = args[i + 1];
+                        break;
+                    }
+                }
+
+                if (directory == null)
+                {
+                    Console.WriteLine("Directory not specified.");
+                    return;
+                }
+
                 if (path == "/user-agent" && userAgent != null)
                 {
                     string response = $"HTTP/1.1 200 OK\r\n" +
@@ -70,6 +87,30 @@ void HandleClient(object obj)
                                        echoPath;
                     socket.Send(Encoding.UTF8.GetBytes(response));
                     Console.WriteLine("Sent response 200 OK with echo path!");
+                }
+                else if (path.StartsWith("/files/"))
+                {
+                    string fileName = path.Substring("/files/".Length);
+                    string filePath = Path.Combine(directory, fileName);
+
+                    if (File.Exists(filePath))
+                    {
+                        byte[] fileContent = File.ReadAllBytes(filePath);
+
+
+                        string response = $"HTTP/1.1 200 OK\r\n" +
+                                           "Content-Type: text/plain\r\n" +
+                                           $"Content-Length: {fileContent.Length}\r\n\r\n";
+                        socket.Send(Encoding.UTF8.GetBytes(response));
+                        socket.Send(fileContent);
+                        Console.WriteLine("Sent response 200 OK with file content!");
+                    }
+                    else
+                    {
+                        string response = "HTTP/1.1 404 Not Found\r\n\r\n";
+                        socket.Send(Encoding.UTF8.GetBytes(response));
+                        Console.WriteLine("Sent response 404 Not Found!");
+                    }
                 }
                 else if (path == "/")
                 {

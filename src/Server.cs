@@ -94,6 +94,7 @@ void HandleClient(object obj)
                 {
                     string fileName = path.Substring("/files/".Length);
                     string filePath = Path.Combine(directory, fileName);
+                    Console.WriteLine("FilePath: " + filePath);
 
                     if (File.Exists(filePath))
                     {

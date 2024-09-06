@@ -66,7 +66,6 @@ void HandleClient(object obj)
                 if (directory == null)
                 {
                     Console.WriteLine("Directory not specified.");
-                    return;
                 }
 
                 if (path == "/user-agent" && userAgent != null)

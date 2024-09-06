@@ -1,6 +1,8 @@
+using System.IO;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
+using static System.Net.Mime.MediaTypeNames;
 
 // You can use print statements as follows for debugging, they'll be visible when running tests.
 Console.WriteLine("Logs from your program will appear here!");
@@ -97,9 +99,9 @@ void HandleClient(object obj)
                     {
                         byte[] fileContent = File.ReadAllBytes(filePath);
 
-
+                        
                         string response = $"HTTP/1.1 200 OK\r\n" +
-                                           "Content-Type: text/plain\r\n" +
+                                           "Content-Type: application/octet-stream\r\n" +
                                            $"Content-Length: {fileContent.Length}\r\n\r\n";
                         socket.Send(Encoding.UTF8.GetBytes(response));
                         socket.Send(fileContent);

@@ -35,12 +35,3 @@ Note: This section is for stages 2 and beyond.
    `src/Server.cs`.
 1. Commit your changes and run `git push origin master` to submit your solution
    to CodeCrafters. Test output will be streamed to your terminal.
-
-
-# Test Scenarios
-
-curl -v http://localhost:4221
-curl -i -X GET http://localhost:4221/index.html
-curl --verbose 127.0.0.1:4221/echo/abc
-curl --verbose 127.0.0.1:4221/user-agent
-curl -vvv -d "hello world" localhost:4221/files/readme.txt

@@ -1,5 +1,4 @@
 using System.IO;
-using System.IO.Compression;
 using System.Net;
 using System.Net.Sockets;
 using System.Security.Cryptography.X509Certificates;
@@ -122,23 +121,62 @@ void HandleClient(object obj)
 
                         if (requestedPath == "/user-agent" && userAgent != null)
                         {
-                            SendResponseWithUserAgent(userAgent, socket);
+                            string response = $"HTTP/1.1 200 OK\r\n" +
+                                               "Content-Type: text/plain\r\n" +
+                                               $"Content-Length: {userAgent.Length}\r\n\r\n" +
+                                               userAgent;
+                            socket.Send(Encoding.UTF8.GetBytes(response));
+                            Console.WriteLine("Sent response 200 OK with User Agent!");
                         }
                         else if (requestedPath.StartsWith("/echo/"))
                         {
-                            SendResponseBackWithEchoPath(path, socket);
+                            string echoPath = requestedPath.Substring("/echo/".Length);
+                            Console.WriteLine($"Extracted echo path: {echoPath}");
+
+                            string response = $"HTTP/1.1 200 OK\r\n" +
+                                               "Content-Type: text/plain\r\n" +
+                                               $"Content-Length: {echoPath.Length}\r\n\r\n" +
+                                               echoPath;
+                            socket.Send(Encoding.UTF8.GetBytes(response));
+                            Console.WriteLine("Sent response 200 OK with echo path!");
                         }
                         else if (requestedPath.StartsWith("/files/"))
                         {
-                            SendResponseBackWithFileContent(path, directory, socket);
+                            string fileName = requestedPath.Substring("/files/".Length);
+                            string filePath = Path.Combine(directory, fileName);
+                            Console.WriteLine("FilePath: " + filePath);
+
+                            if (File.Exists(filePath))
+                            {
+                                byte[] fileContent = File.ReadAllBytes(filePath);
+
+                                string response = $"HTTP/1.1 200 OK\r\n" +
+                                                   "Content-Type: application/octet-stream\r\n" +
+                                                   $"Content-Length: {fileContent.Length}\r\n\r\n";
+                                socket.Send(Encoding.UTF8.GetBytes(response));
+                                socket.Send(fileContent);
+                                Console.WriteLine("Sent response 200 OK with file content!");
+                            }
+                            else
+                            {
+                                string response = "HTTP/1.1 404 Not Found\r\n\r\n";
+                                socket.Send(Encoding.UTF8.GetBytes(response));
+                                Console.WriteLine("Sent response 404 Not Found!");
+                            }
                         }
                         else if (requestedPath == "/")
                         {
-                            SendSimple200Response(socket);
+                            // Respond with 200 OK
+                            string response = "HTTP/1.1 200 OK\r\n\r\n";
+                            socket.Send(Encoding.UTF8.GetBytes(response));
+                            Console.WriteLine("Sent response 200 OK!");
                         }
                         else
                         {
-                            Response404NotFound(socket);
+                            // Respond with 404 Not Found
+                            string response = "HTTP/1.1 404 Not Found\r\n\r\n";
+                            socket.Send(Encoding.UTF8.GetBytes(response));
+                            Console.WriteLine("Sent response 404 Not Found!");
                         }
                     }
 
@@ -156,123 +194,5 @@ void HandleClient(object obj)
         Console.WriteLine("Client disconnected");
     }
 
-    string GetDirectory()
-    {
-        string[] args = Environment.GetCommandLineArgs();
-        string directory = null;
-        for (int i = 0; i < args.Length; i++)
-        {
-            if (args[i] == "--directory" && i + 1 < args.Length)
-            {
-                directory = args[i + 1];
-                Console.WriteLine("Directory: " + directory);
-                break;
-            }
-        }
-        if (directory == null)
-        {
-            Console.WriteLine("Directory not specified.");
-        }
-        return directory;
-    }
-
-    void Response404NotFound(Socket socket)
-    {
-        // Respond with 404 Not Found
-        string response = "HTTP/1.1 404 Not Found\r\n\r\n";
-        socket.Send(Encoding.UTF8.GetBytes(response));
-        Console.WriteLine("Sent response 404 Not Found!");
-    }
-
-    void SendSimple200Response(Socket socket)
-    {
-        // Respond with 200 OK
-        string response = "HTTP/1.1 200 OK\r\n\r\n";
-        socket.Send(Encoding.UTF8.GetBytes(response));
-        Console.WriteLine("Sent response 200 OK!");
-    }
-
-    void SendResponseBackWithFileContent(string path, string directory, Socket socket)
-    {
-        string fileName = path.Substring("/files/".Length);
-        string filePath = Path.Combine(directory, fileName);
-        Console.WriteLine("FilePath: " + filePath);
-
-        if (File.Exists(filePath))
-        {
-            byte[] fileContent = File.ReadAllBytes(filePath);
-
-
-            string response = $"HTTP/1.1 200 OK\r\n" +
-                               "Content-Type: application/octet-stream\r\n" +
-                               $"Content-Length: {fileContent.Length}\r\n\r\n";
-            socket.Send(Encoding.UTF8.GetBytes(response));
-            socket.Send(fileContent);
-            Console.WriteLine("Sent response 200 OK with file content!");
-        }
-        else
-        {
-            string response = "HTTP/1.1 404 Not Found\r\n\r\n";
-            socket.Send(Encoding.UTF8.GetBytes(response));
-            Console.WriteLine("Sent response 404 Not Found!");
-        }
-    }
-
-    void SendResponseBackWithEchoPath(string path, Socket socket)
-    {
-        string echoPath = path.Substring("/echo/".Length);
-        Console.WriteLine($"Extracted echo path: {echoPath}");
-
-        string responseBody = echoPath;
-        byte[] responseBodyBytes = Encoding.UTF8.GetBytes(responseBody);
-        string contentEncoding = "identity";
-
-        // Check for Accept-Encoding header
-        using (var networkStream = new NetworkStream(socket))
-        using (var reader = new StreamReader(networkStream, Encoding.UTF8))
-        {
-            string line;
-            while (!string.IsNullOrEmpty(line = reader.ReadLine()))
-            {
-                if (line.StartsWith("Accept-Encoding:"))
-                {
-                    string acceptEncoding = line.Substring("Accept-Encoding:".Length).Trim();
-                    if (acceptEncoding.Contains("gzip"))
-                    {
-                        // Compress the response body using gzip
-                        using (var memoryStream = new MemoryStream())
-                        {
-                            using (var gzipStream = new GZipStream(memoryStream, CompressionMode.Compress))
-                            {
-                                gzipStream.Write(responseBodyBytes, 0, responseBodyBytes.Length);
-                            }
-                            responseBodyBytes = memoryStream.ToArray();
-                        }
-                        contentEncoding = "gzip";
-                    }
-                    break;
-                }
-            }
-        }
-
-        string response = $"HTTP/1.1 200 OK\r\n" +
-                          "Content-Type: text/plain\r\n" +
-                          $"Content-Encoding: {contentEncoding}\r\n" +
-                          $"Content-Length: {responseBodyBytes.Length}\r\n\r\n";
-        socket.Send(Encoding.UTF8.GetBytes(response));
-        socket.Send(responseBodyBytes);
-        Console.WriteLine("Sent response 200 OK with echo path and Content-Encoding header!");
-    }
-
-    void SendResponseWithUserAgent(string userAgent, Socket socket)
-    {
-        string response = $"HTTP/1.1 200 OK\r\n" +
-                                            "Content-Type: text/plain\r\n" +
-                                            $"Content-Length: {userAgent.Length}\r\n\r\n" +
-                                            userAgent;
-        socket.Send(Encoding.UTF8.GetBytes(response));
-        Console.WriteLine("Sent response 200 OK with User Agent!");
-
-    }
 
 }

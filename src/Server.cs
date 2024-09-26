@@ -1,4 +1,5 @@
 using System.IO;
+using System.IO.Compression;
 using System.Net;
 using System.Net.Sockets;
 using System.Security.Cryptography.X509Certificates;
@@ -125,7 +126,7 @@ void HandleClient(object obj)
                         }
                         else if (requestedPath.StartsWith("/echo/"))
                         {
-                            SendResponseBackWithEchoPath(path, socket); 
+                            SendResponseBackWithEchoPath(path, socket);
                         }
                         else if (requestedPath.StartsWith("/files/"))
                         {
@@ -222,13 +223,45 @@ void HandleClient(object obj)
         string echoPath = path.Substring("/echo/".Length);
         Console.WriteLine($"Extracted echo path: {echoPath}");
 
+        string responseBody = echoPath;
+        byte[] responseBodyBytes = Encoding.UTF8.GetBytes(responseBody);
+        string contentEncoding = "identity";
+
+        // Check for Accept-Encoding header
+        using (var networkStream = new NetworkStream(socket))
+        using (var reader = new StreamReader(networkStream, Encoding.UTF8))
+        {
+            string line;
+            while (!string.IsNullOrEmpty(line = reader.ReadLine()))
+            {
+                if (line.StartsWith("Accept-Encoding:"))
+                {
+                    string acceptEncoding = line.Substring("Accept-Encoding:".Length).Trim();
+                    if (acceptEncoding.Contains("gzip"))
+                    {
+                        // Compress the response body using gzip
+                        using (var memoryStream = new MemoryStream())
+                        {
+                            using (var gzipStream = new GZipStream(memoryStream, CompressionMode.Compress))
+                            {
+                                gzipStream.Write(responseBodyBytes, 0, responseBodyBytes.Length);
+                            }
+                            responseBodyBytes = memoryStream.ToArray();
+                        }
+                        contentEncoding = "gzip";
+                    }
+                    break;
+                }
+            }
+        }
+
         string response = $"HTTP/1.1 200 OK\r\n" +
-                      "Content-Type: text/plain\r\n" +
-                      "Content-Encoding: identity\r\n" + // Add Content-Encoding header
-                      $"Content-Length: {echoPath.Length}\r\n\r\n" +
-                      echoPath;
+                          "Content-Type: text/plain\r\n" +
+                          $"Content-Encoding: {contentEncoding}\r\n" +
+                          $"Content-Length: {responseBodyBytes.Length}\r\n\r\n";
         socket.Send(Encoding.UTF8.GetBytes(response));
-        Console.WriteLine("Sent response 200 OK with echo path!");
+        socket.Send(responseBodyBytes);
+        Console.WriteLine("Sent response 200 OK with echo path and Content-Encoding header!");
     }
 
     void SendResponseWithUserAgent(string userAgent, Socket socket)

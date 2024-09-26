@@ -1,7 +1,7 @@
 using System.IO;
+using System.IO.Compression;
 using System.Net;
 using System.Net.Sockets;
-using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using static System.Net.Mime.MediaTypeNames;
 
@@ -25,6 +25,7 @@ while (true)
 string GetDirectory()
 {
     string directory = null;
+    string[] args = Environment.GetCommandLineArgs();
     for (int i = 0; i < args.Length; i++)
     {
         if (args[i] == "--directory" && i + 1 < args.Length)
@@ -36,6 +37,7 @@ string GetDirectory()
     }
     return null;
 }
+
 void HandleClient(object obj)
 {
     var socket = (Socket)obj;
@@ -115,7 +117,6 @@ void HandleClient(object obj)
                         }
                     }
 
-                    string[] args = Environment.GetCommandLineArgs();
                     string directory = GetDirectory();
 
                     if (directory == null)
@@ -137,18 +138,27 @@ void HandleClient(object obj)
                         string echoPath = requestedPath.Substring("/echo/".Length);
                         Console.WriteLine($"Extracted echo path: {echoPath}");
 
+                        byte[] responseBodyBytes = Encoding.UTF8.GetBytes(echoPath);
                         string contentEncodingHeader = "";
                         if (acceptEncoding != null && acceptEncoding.Split(',').Select(e => e.Trim()).Contains("gzip"))
                         {
+                            using (var memoryStream = new MemoryStream())
+                            {
+                                using (var gzipStream = new GZipStream(memoryStream, CompressionMode.Compress))
+                                {
+                                    gzipStream.Write(responseBodyBytes, 0, responseBodyBytes.Length);
+                                }
+                                responseBodyBytes = memoryStream.ToArray();
+                            }
                             contentEncodingHeader = "Content-Encoding: gzip\r\n";
                         }
 
                         string response = $"HTTP/1.1 200 OK\r\n" +
                                            "Content-Type: text/plain\r\n" +
                                            contentEncodingHeader +
-                                           $"Content-Length: {echoPath.Length}\r\n\r\n" +
-                                           echoPath;
+                                           $"Content-Length: {responseBodyBytes.Length}\r\n\r\n";
                         socket.Send(Encoding.UTF8.GetBytes(response));
+                        socket.Send(responseBodyBytes);
                         Console.WriteLine("Sent response 200 OK with echo path!");
                     }
                     else if (requestedPath.StartsWith("/files/"))

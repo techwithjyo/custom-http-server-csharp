@@ -223,9 +223,10 @@ void HandleClient(object obj)
         Console.WriteLine($"Extracted echo path: {echoPath}");
 
         string response = $"HTTP/1.1 200 OK\r\n" +
-                           "Content-Type: text/plain\r\n" +
-                           $"Content-Length: {echoPath.Length}\r\n\r\n" +
-                           echoPath;
+                      "Content-Type: text/plain\r\n" +
+                      "Content-Encoding: identity\r\n" + // Add Content-Encoding header
+                      $"Content-Length: {echoPath.Length}\r\n\r\n" +
+                      echoPath;
         socket.Send(Encoding.UTF8.GetBytes(response));
         Console.WriteLine("Sent response 200 OK with echo path!");
     }

@@ -138,7 +138,7 @@ void HandleClient(object obj)
                         Console.WriteLine($"Extracted echo path: {echoPath}");
 
                         string contentEncodingHeader = "";
-                        if (acceptEncoding != null && acceptEncoding.Contains("gzip"))
+                        if (acceptEncoding != null && acceptEncoding.Split(',').Select(e => e.Trim()).Contains("gzip"))
                         {
                             contentEncodingHeader = "Content-Encoding: gzip\r\n";
                         }

@@ -1,4 +1,4 @@
-[![progress-banner](https://backend.codecrafters.io/progress/http-server/0a6a7006-6f6b-42aa-9593-37f276996bcb)](https://app.codecrafters.io/users/codecrafters-bot?r=2qF)
+[![progress-banner](https://backend.codecrafters.io/progress/http-server/34def3a5-9403-483c-aba3-c1272c655e95)](https://app.codecrafters.io/users/codecrafters-bot?r=2qF)
 
 This is a starting point for C# solutions to the
 ["Build Your Own HTTP server" Challenge](https://app.codecrafters.io/courses/http-server/overview).
@@ -35,9 +35,13 @@ Note: This section is for stages 2 and beyond.
    `src/Server.cs`.
 1. Commit your changes and run `git push origin master` to submit your solution
    to CodeCrafters. Test output will be streamed to your terminal.
-   # Test Scenarios
-1) curl -v http://localhost:4221
-2) curl -i -X GET http://localhost:4221/index.html
-3) curl --verbose 127.0.0.1:4221/echo/abc
-4) curl --verbose 127.0.0.1:4221/user-agent
-5) curl -vvv -d "hello world" localhost:4221/files/readme.txt
+
+# Local Testing
+
+1. Get Echo Path: curl --verbose 127.0.0.1:4221/echo/abc
+2. Get User Agent Path: curl -v --header "User-Agent: foobar/1.2.3" http://localhost:4221/user-agent
+3. curl -v http://localhost:4221
+4. curl -i -X GET http://localhost:4221/index.html
+5. curl --verbose 127.0.0.1:4221/echo/abc
+6. curl --verbose 127.0.0.1:4221/user-agent
+7. curl -vvv -d "hello world" localhost:4221/files/readme.txt
